@@ -4,10 +4,18 @@ const app = express()
 
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const admin = require('firebase-admin');
 
 const port = 5000
 app.use(cors());
 app.use(bodyParser.json());
+
+var serviceAccount = require("./burj-al-arab-sujon-firebase-adminsdk-q5wnw-5e30ca82c8.json");
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
 
 const pass = "ArabianHorse79";
 
@@ -28,11 +36,32 @@ client.connect(err => {
     })
 
     app.get('/bookings',(req,res) =>{
-        console.log(req.headers.authorization);
-        bookings.find({email: req.query.email})
-            .toArray((err,documents)=>{
-                res.send(documents);
-            })
+        const bearer = req.headers.authorization;
+        if (bearer && bearer.startsWith('Bearer ')){
+            const idToken = bearer.split(' ')[1];
+            console.log({idToken});
+            admin
+                .auth()
+                .verifyIdToken(idToken)
+                .then((decodedToken) => {
+                    const tokenEmail = decodedToken.email;
+                    const queryEmail = req.query.email;
+                    console.log(tokenEmail,queryEmail);
+                    if (tokenEmail == queryEmail){
+                        bookings.find({email: req.query.email})
+                            .toArray((err,documents)=>{
+                                res.send(documents);
+                            })
+                    }
+                    // ...
+                })
+                .catch((error) => {
+                    // Handle error
+                });
+        }
+
+
+
     })
 
 })
