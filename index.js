@@ -32,36 +32,35 @@ client.connect(err => {
             .then(result =>{
                 res.send(result.insertedCount > 0);
             })
-        console.log(newBooking);
     })
 
     app.get('/bookings',(req,res) =>{
         const bearer = req.headers.authorization;
         if (bearer && bearer.startsWith('Bearer ')){
             const idToken = bearer.split(' ')[1];
-            console.log({idToken});
             admin
                 .auth()
                 .verifyIdToken(idToken)
                 .then((decodedToken) => {
                     const tokenEmail = decodedToken.email;
                     const queryEmail = req.query.email;
-                    console.log(tokenEmail,queryEmail);
                     if (tokenEmail == queryEmail){
-                        bookings.find({email: req.query.email})
+                        bookings.find({email: queryEmail})
                             .toArray((err,documents)=>{
-                                res.send(documents);
+                                res.status(200).send(documents);
                             })
                     }
-                    // ...
+                    else {
+                        res.status(401).send('Unauthorized access');
+                    }
                 })
                 .catch((error) => {
-                    // Handle error
+                    res.status(401).send('Unauthorized access');
                 });
         }
-
-
-
+        else {
+            res.status(401).send('Unauthorized access');
+        }
     })
 
 })
